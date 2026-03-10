@@ -308,75 +308,47 @@
   }
   window.showConfig = () => showScreen('s-config');
 
+  // ── Hardcoded Firebase config ─────────────────────
+  // Safe to embed in frontend — the API key identifies the project but
+  // access is controlled entirely by Firestore security rules, not secrecy.
+  const FIREBASE_CONFIG = {
+    apiKey:            "AIzaSyDOUHw5trieJgLoJYsz6b0Q1Q9w0Xybf5M",
+    authDomain:        "curveslivepro-licensing.firebaseapp.com",
+    projectId:         "curveslivepro-licensing",
+    storageBucket:     "curveslivepro-licensing.firebasestorage.app",
+    messagingSenderId: "582693878762",
+    appId:             "1:582693878762:web:c4349259ba3efa59219093"
+  };
+
   // ── state ─────────────────────────────────────────
   let sessions = [];
   let unsub    = null;
-  const LS_KEY = 'bdt_cfg';
 
-  function saveCfg(cfg) { localStorage.setItem(LS_KEY, JSON.stringify(cfg)); }
-  function loadCfg()     { try { return JSON.parse(localStorage.getItem(LS_KEY)||'{}'); } catch{ return {}; } }
-
-  // ── URL param detection (passed from Blender addon) ─
-  function paramsFromURL() {
-    const p = new URLSearchParams(location.search);
-    const cfg = {};
-    if (p.get('projectId')) cfg.projectId = p.get('projectId');
-    if (p.get('apiKey'))    cfg.apiKey    = p.get('apiKey');
-    if (p.get('machine'))   cfg.machine   = p.get('machine');
-    return cfg;
-  }
-
-  // ── init flow ─────────────────────────────────────
+  // ── boot — read optional URL params from Blender addon ──
+  // Only machine name is cosmetic; no sensitive data in URL.
   function boot() {
-    const urlCfg   = paramsFromURL();
-    const savedCfg = loadCfg();
-    // URL params take priority; merge over saved
-    const cfg = { ...savedCfg, ...urlCfg };
-
-    if (urlCfg.projectId || urlCfg.apiKey) {
-      // Came from Blender — save merged config silently
-      saveCfg(cfg);
-      // Clean URL so refreshing doesn't re-trigger
-      history.replaceState({}, '', location.pathname);
-    }
-
-    if (cfg.projectId && cfg.apiKey) {
-      // Pre-fill form in case user wants to change later
-      $('in-pid').value = cfg.projectId;
-      $('in-key').value = cfg.apiKey;
-      connect(cfg);
-    } else {
-      // Show config form with any partial data prefilled
-      if (cfg.projectId) $('in-pid').value = cfg.projectId;
-      if (cfg.apiKey)    $('in-key').value = cfg.apiKey;
-      showScreen('s-config');
-    }
+    const params = new URLSearchParams(location.search);
+    const machine = params.get('machine') || null;
+    // Clean URL immediately
+    if (location.search) history.replaceState({}, '', location.pathname);
+    connect(machine);
   }
 
-  window.connectFromForm = function() {
-    const pid = $('in-pid').value.trim();
-    const key = $('in-key').value.trim();
-    let valid = true;
-    $('err-pid').classList.toggle('show', !pid); $('in-pid').classList.toggle('error', !pid);
-    $('err-key').classList.toggle('show', !key); $('in-key').classList.toggle('error', !key);
-    if (!pid || !key) return;
-    const cfg = { projectId: pid, apiKey: key };
-    saveCfg(cfg);
-    connect(cfg);
-  };
-
-  function connect(cfg) {
+  function connect(machineHint) {
     if (unsub) { try { unsub(); } catch(_){} }
-    $('loading-msg').textContent = `Connecting to ${cfg.projectId}…`;
+    $('loading-msg').textContent = `Connecting to ${FIREBASE_CONFIG.projectId}…`;
     showScreen('s-loading');
 
     let app, db;
     try {
-      app = initializeApp({ projectId: cfg.projectId, apiKey: cfg.apiKey }, cfg.projectId + '_' + Date.now());
+      app = initializeApp(FIREBASE_CONFIG, 'bdt_' + Date.now());
       db  = getFirestore(app);
     } catch(e) { return showError(e.message); }
 
-    set('proj-label', cfg.projectId + ' · live');
+    set('proj-label', machineHint
+      ? `${FIREBASE_CONFIG.projectId} · ${machineHint}`
+      : `${FIREBASE_CONFIG.projectId} · live`
+    );
 
     const q = query(collection(db, 'sessions'), orderBy('start_time','desc'), limit(500));
     unsub = onSnapshot(q,
