@@ -353,12 +353,39 @@
     const q = query(collection(db, 'sessions'), orderBy('start_time','desc'), limit(500));
     unsub = onSnapshot(q,
       snap => {
-        sessions = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+        sessions = snap.docs.map(d => {
+          const data = d.data();
+          // Guarantee start_time exists — docs written without it get dropped
+          // by the orderBy clause silently. Use document ID timestamp as fallback.
+          if (!data.start_time && d.id) {
+            const ts = d.id.split('_')[1];
+            if (ts) data.start_time = new Date(parseInt(ts) * 1000).toISOString();
+          }
+          return { _id: d.id, ...data };
+        });
         render();
         showScreen('app');
       },
       err => showError(err.message)
     );
+  }
+
+  // ── live elapsed ticker for running sessions ──────
+  // The dashboard shows elapsed_seconds from Firestore which only updates
+  // when the addon pushes. We tick running sessions locally every second
+  // so the displayed time always feels live.
+  let _tickInterval = null;
+
+  function startTicker() {
+    if (_tickInterval) return;
+    _tickInterval = setInterval(() => {
+      const hasRunning = sessions.some(s => s.status === 'running');
+      if (hasRunning) renderTable();
+    }, 1000);
+  }
+
+  function stopTicker() {
+    if (_tickInterval) { clearInterval(_tickInterval); _tickInterval = null; }
   }
 
   function showError(msg) {
@@ -385,8 +412,18 @@
     set('s-avg',       fmt(avg));
     set('last-updated','Live · '+new Date().toLocaleTimeString());
 
+    if (running > 0) startTicker(); else stopTicker();
+
     renderTable();
     renderCharts();
+  }
+
+  function liveElapsed(s) {
+    // For running sessions: add seconds elapsed since last Firestore push
+    if (s.status !== 'running' || !s.last_activity_time) return s.elapsed_seconds || 0;
+    const lastPush = new Date(s.last_activity_time).getTime();
+    const extraSec = Math.max(0, Math.floor((Date.now() - lastPush) / 1000));
+    return (s.elapsed_seconds || 0) + extraSec;
   }
 
   function renderTable() {
@@ -398,9 +435,10 @@
       </td></tr>`;
       return;
     }
-    const mx = Math.max(...sessions.map(s=>s.elapsed_seconds||0),1);
+    const mx = Math.max(...sessions.map(s=>liveElapsed(s)),1);
     tb.innerHTML = sessions.map(s=>{
-      const pct  = Math.round(((s.elapsed_seconds||0)/mx)*100);
+      const elapsed = liveElapsed(s);
+      const pct  = Math.round((elapsed/mx)*100);
       const live = s.status==='running';
       const badge = live
         ? `<span class="badge b-run"><span class="bdot"></span>running</span>`
@@ -410,7 +448,7 @@
         <td>${s.machine||'—'}</td>
         <td>${iso(s.start_time)}</td>
         <td><div style="display:flex;align-items:center;gap:8px">
-          <span>${fmt(s.elapsed_seconds)}</span>
+          <span>${fmt(elapsed)}</span>
           <div class="bw"><div class="bf" style="width:${pct}%"></div></div>
         </div></td>
         <td>${s.reloads??'—'}</td>
