@@ -3,314 +3,214 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dev Tracker — Blender Dev Tools</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<title>Blender Dev Tracker</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
-    --bg:       #0d0e12;
-    --surface:  #13151c;
-    --surface2: #1a1d27;
-    --border:   rgba(255,255,255,0.07);
-    --accent:   #e8650a;
-    --accent2:  #f59e0b;
-    --green:    #22c55e;
-    --blue:     #38bdf8;
-    --red:      #ef4444;
-    --text:     #e4e6ed;
-    --muted:    #6b7280;
-    --radius:   10px;
+    --bg:        #0d1117;
+    --surface:   #161b22;
+    --border:    #30363d;
+    --text:      #e6edf3;
+    --muted:     #8b949e;
+    --accent:    #58a6ff;
+    --green:     #3fb950;
+    --red:       #f85149;
+    --yellow:    #d29922;
+    --orange:    #e3b341;
+    --radius:    8px;
   }
-
-  html { font-size: 15px; }
-  body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; overflow-x: hidden; }
-
-  /* grain */
-  body::before {
-    content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.35;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-  }
-
-  /* ── Overlay screens ─────────────────────────── */
-  .screen {
-    position: fixed; inset: 0; z-index: 200;
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
     background: var(--bg);
-    display: flex; align-items: center; justify-content: center;
-    flex-direction: column; gap: 24px; padding: 32px;
-    animation: fadeIn 0.3s ease;
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
   }
-  .screen.hidden { display: none; }
 
-  .splash-logo { font-size: 2.2rem; font-weight: 800; letter-spacing: -1.5px; }
-  .splash-logo span { color: var(--accent); }
-  .splash-sub { font-size: 0.85rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
-
-  /* config form */
-  .cfg-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 32px 36px;
-    width: 100%; max-width: 460px;
-    display: flex; flex-direction: column; gap: 18px;
+  /* ── Header ──────────────────────────────────────────── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
   }
-  .cfg-card h2 { font-size: 1rem; font-weight: 700; letter-spacing: 0.02em; }
-  .cfg-card p  { font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
-
-  .field { display: flex; flex-direction: column; gap: 6px; }
-  .field label { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-  .field input {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 6px; color: var(--text);
-    font-family: 'JetBrains Mono', monospace; font-size: 0.88rem;
-    padding: 10px 14px; transition: border-color 0.2s;
+  .header h1 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  .field input:focus { outline: none; border-color: var(--accent); }
-  .field input.error { border-color: var(--red); }
-
-  .btn-primary {
-    background: var(--accent); color: #fff; border: none;
-    border-radius: 6px; font-family: 'Syne', sans-serif;
-    font-weight: 700; font-size: 0.95rem; letter-spacing: 0.04em;
-    padding: 12px 28px; cursor: pointer;
-    transition: opacity 0.15s, transform 0.1s;
+  .header h1 .icon { font-size: 1.4rem; }
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 0.85rem;
+    color: var(--muted);
   }
-  .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
-  .btn-primary:active { transform: none; }
-  .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  .status-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+  }
+  .status-dot.connected { background: var(--green); }
+  .status-dot.disconnected { background: var(--red); }
 
-  .field-err { font-size: 0.75rem; color: var(--red); display: none; }
-  .field-err.show { display: block; }
+  /* ── Summary cards ───────────────────────────────────── */
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    padding: 20px 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+  }
+  .card .value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .card .label {
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+  }
+  .card .value.running { color: var(--green); }
+  .card .value.accent  { color: var(--accent); }
 
-  /* loading */
-  .connecting { display: flex; align-items: center; gap: 10px; font-size: 0.82rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
-  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  /* ── Table ───────────────────────────────────────────── */
+  .table-wrap {
+    padding: 0 24px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+  thead th {
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+  }
+  tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  tbody tr:hover { background: rgba(88, 166, 255, 0.04); }
 
-  /* error */
-  .err-icon { font-size: 2.5rem; }
-  .err-msg  { font-size: 0.85rem; color: var(--muted); max-width: 440px; text-align: center; line-height: 1.6; }
-  code { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--red); max-width: 500px; word-break: break-all; display: block; text-align: left; }
-  .btn-sm { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); border-radius: 6px; font-family: 'Syne', sans-serif; font-size: 0.8rem; padding: 7px 14px; cursor: pointer; transition: border-color 0.2s, color 0.2s; }
-  .btn-sm:hover { border-color: var(--accent); color: var(--text); }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .badge.running {
+    background: rgba(63, 185, 80, 0.15);
+    color: var(--green);
+  }
+  .badge.stopped {
+    background: rgba(139, 148, 158, 0.15);
+    color: var(--muted);
+  }
 
-  /* ── App ─────────────────────────────────────── */
-  #app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+  .elapsed-live { color: var(--green); font-weight: 600; }
+  .elapsed-stopped { color: var(--text); }
 
-  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; flex-wrap: wrap; gap: 16px; }
-  .logo-mark { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; }
-  .logo-mark span { color: var(--accent); }
-  .header-right { display: flex; align-items: center; gap: 12px; }
-  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
-  .live-label { font-size: 0.8rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty-state .big { font-size: 2rem; margin-bottom: 8px; }
 
-  /* stat cards */
-  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 16px; margin-bottom: 32px; }
-  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; animation: slideUp 0.4s ease both; }
-  .stat-card .lbl { font-size: 0.72rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-  .stat-card .val { font-size: 1.9rem; font-weight: 800; letter-spacing: -1px; }
-  .stat-card .sub { font-size: 0.75rem; color: var(--muted); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
-  .c-accent { color: var(--accent); }
-  .c-green  { color: var(--green); }
-  .c-blue   { color: var(--blue); }
-
-  /* charts */
-  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 28px; }
-  @media (max-width: 640px) { .charts-grid { grid-template-columns: 1fr; } }
-  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
-  .chart-title { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-bottom: 16px; }
-  .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 96px; }
-  .bc { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-  .bc .b { width: 100%; background: linear-gradient(180deg, var(--accent), var(--accent2)); border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.5s cubic-bezier(.4,0,.2,1); }
-  .bc .bl { font-size: 0.6rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
-  .mbar { margin-bottom: 10px; }
-  .mbar-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.78rem; }
-  .mbar-name { font-family: 'Syne', sans-serif; font-weight: 600; }
-  .mbar-info { color: var(--muted); font-family: 'JetBrains Mono', monospace; }
-  .bar-wrap { width: 100%; background: var(--surface2); border-radius: 4px; height: 7px; }
-  .bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.5s cubic-bezier(.4,0,.2,1); }
-
-  /* table */
-  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-  .section-title  { font-size: 0.79rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-  table { width: 100%; border-collapse: collapse; }
-  thead th { background: var(--surface2); font-size: 0.71rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); text-align: left; padding: 12px 18px; font-weight: 600; border-bottom: 1px solid var(--border); }
-  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.12s; animation: slideUp 0.3s ease both; }
-  tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: var(--surface2); }
-  td { padding: 13px 18px; font-size: 0.87rem; font-family: 'JetBrains Mono', monospace; vertical-align: middle; }
-  td.nm { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.9rem; }
-  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 0.71rem; font-weight: 600; font-family: 'Syne', sans-serif; }
-  .b-run { background: rgba(34,197,94,.15); color: var(--green); border: 1px solid rgba(34,197,94,.3); }
-  .b-stp { background: rgba(107,114,128,.15); color: var(--muted); border: 1px solid rgba(107,114,128,.2); }
-  .bdot  { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-  .b-run .bdot { animation: pulse 1.5s infinite; }
-  .bw { width: 100%; background: var(--surface2); border-radius: 4px; height: 5px; min-width: 70px; }
-  .bf { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
-  .empty { text-align: center; padding: 56px 24px; color: var(--muted); }
-  .empty .ico { font-size: 2.5rem; margin-bottom: 12px; }
-  .empty p { font-size: 0.9rem; line-height: 1.7; }
-  .load-row td { text-align: center; padding: 40px; color: var(--muted); }
-
-  @keyframes fadeIn  { from { opacity:0 } to { opacity:1 } }
-  @keyframes slideUp { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:none } }
-  @keyframes pulse   { 0%,100%{ opacity:1 } 50%{ opacity:.35 } }
-  @keyframes spin    { to { transform: rotate(360deg) } }
-
-  tbody tr:nth-child(1){animation-delay:.04s} tbody tr:nth-child(2){animation-delay:.08s}
-  tbody tr:nth-child(3){animation-delay:.12s} tbody tr:nth-child(4){animation-delay:.16s}
-  tbody tr:nth-child(5){animation-delay:.20s}
-
-  @media(max-width:640px){
-    .stat-grid{grid-template-columns:1fr 1fr;}
-    thead th:nth-child(n+4),td:nth-child(n+4){display:none;}
+  /* ── Responsive ──────────────────────────────────────── */
+  @media (max-width: 640px) {
+    .header { padding: 12px 16px; }
+    .summary { padding: 12px 16px; }
+    .table-wrap { padding: 0 8px 24px; }
+    thead th, tbody td { padding: 8px 6px; font-size: 0.8rem; }
   }
 </style>
 </head>
 <body>
 
-<!-- ── Loading ─────────────────────────────────── -->
-<div id="s-loading" class="screen">
-  <div class="splash-logo">Blender <span>Dev</span> Tracker</div>
-  <div class="connecting"><span class="spinner"></span><span id="loading-msg">Connecting…</span></div>
-</div>
-
-<!-- ── Config prompt ───────────────────────────── -->
-<div id="s-config" class="screen hidden">
-  <div class="splash-logo">Blender <span>Dev</span> Tracker</div>
-  <p class="splash-sub">Connect to your Firebase project to view sessions</p>
-  <div class="cfg-card">
-    <h2>Firebase Configuration</h2>
-    <p>Enter your Firebase details below. These are saved in your browser and can also be pre-filled automatically from the Blender addon.</p>
-    <div class="field">
-      <label>Project ID</label>
-      <input id="in-pid" type="text" placeholder="my-project-id" autocomplete="off" spellcheck="false">
-      <span class="field-err" id="err-pid">Project ID is required</span>
-    </div>
-    <div class="field">
-      <label>API Key</label>
-      <input id="in-key" type="text" placeholder="AIzaSy…" autocomplete="off" spellcheck="false">
-      <span class="field-err" id="err-key">API Key is required</span>
-    </div>
-    <button class="btn-primary" id="btn-connect" onclick="connectFromForm()">Connect →</button>
+<div class="header">
+  <h1><span class="icon">&#9881;</span> Blender Dev Tracker</h1>
+  <div class="header-meta">
+    <span id="machineLabel"></span>
+    <span><span class="status-dot" id="connDot"></span><span id="connLabel">Connecting...</span></span>
   </div>
 </div>
 
-<!-- ── Error ────────────────────────────────────── -->
-<div id="s-error" class="screen hidden">
-  <div class="err-icon">⚠️</div>
-  <p class="err-msg">Could not connect to Firebase. Check your Project ID and API Key, and confirm your Firestore <code style="display:inline;padding:2px 6px;font-size:inherit">sessions</code> collection rules allow reads.</p>
-  <code id="err-detail"></code>
-  <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
-    <button class="btn-sm" onclick="showConfig()">← Change Config</button>
-    <button class="btn-sm" onclick="location.reload()">↻ Retry</button>
+<div class="summary">
+  <div class="card"><div class="value running" id="sumRunning">0</div><div class="label">Running</div></div>
+  <div class="card"><div class="value accent"  id="sumTotal">0</div><div class="label">Total Sessions</div></div>
+  <div class="card"><div class="value"         id="sumTime">00:00</div><div class="label">Total Time</div></div>
+  <div class="card"><div class="value"         id="sumReloads">0</div><div class="label">Total Reloads</div></div>
+  <div class="card"><div class="value"         id="sumPurges">0</div><div class="label">Total Purges</div></div>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Status</th>
+        <th>Session ID</th>
+        <th>Machine</th>
+        <th>Start Time</th>
+        <th>Elapsed</th>
+        <th>Reloads</th>
+        <th>Purges</th>
+        <th>Last Activity</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="empty-state" id="empty" style="display:none;">
+    <div class="big">&#128736;</div>
+    <p>No sessions recorded yet.<br>Start the timer in Blender to begin tracking.</p>
   </div>
 </div>
 
-<!-- ── App ──────────────────────────────────────── -->
-<div id="app">
-  <header>
-    <div class="logo-mark">Blender <span>Dev</span> Tracker</div>
-    <div class="header-right">
-      <div class="live-dot"></div>
-      <span class="live-label" id="proj-label">—</span>
-      <button class="btn-sm" onclick="showConfig()">⚙ Config</button>
-    </div>
-  </header>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+(function() {
+  'use strict';
 
-  <div class="stat-grid">
-    <div class="stat-card" style="animation-delay:0s">
-      <div class="lbl">Total Time</div>
-      <div class="val c-accent" id="s-total">—</div>
-      <div class="sub" id="s-total-sub">all sessions</div>
-    </div>
-    <div class="stat-card" style="animation-delay:.06s">
-      <div class="lbl">Sessions</div>
-      <div class="val" id="s-count">—</div>
-      <div class="sub" id="s-count-sub">recorded</div>
-    </div>
-    <div class="stat-card" style="animation-delay:.12s">
-      <div class="lbl">Reloads</div>
-      <div class="val c-green" id="s-reloads">—</div>
-      <div class="sub">script reloads</div>
-    </div>
-    <div class="stat-card" style="animation-delay:.18s">
-      <div class="lbl">Purges</div>
-      <div class="val c-blue" id="s-purges">—</div>
-      <div class="sub">orphan purges</div>
-    </div>
-    <div class="stat-card" style="animation-delay:.24s">
-      <div class="lbl">Today</div>
-      <div class="val" id="s-today">—</div>
-      <div class="sub">hours worked</div>
-    </div>
-    <div class="stat-card" style="animation-delay:.30s">
-      <div class="lbl">Avg Session</div>
-      <div class="val" id="s-avg">—</div>
-      <div class="sub">hh:mm</div>
-    </div>
-  </div>
-
-  <div class="charts-grid">
-    <div class="chart-card">
-      <div class="chart-title">Last 7 Days — Hours</div>
-      <div class="bar-chart" id="chart-days"></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">Sessions by Machine</div>
-      <div id="chart-machines" style="display:flex;flex-direction:column;gap:10px;padding-top:4px;"></div>
-    </div>
-  </div>
-
-  <div style="margin-top:28px">
-    <div class="section-header">
-      <span class="section-title">All Sessions</span>
-      <span class="live-label" id="last-updated">—</span>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr>
-          <th>Session ID</th><th>Machine</th><th>Started</th>
-          <th>Duration</th><th>Reloads</th><th>Purges</th><th>Status</th>
-        </tr></thead>
-        <tbody id="tbody">
-          <tr class="load-row"><td colspan="7"><span class="spinner"></span> Loading…</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- ── Firebase SDK v12 ──────────────────────────── -->
-<script type="module">
-  import { initializeApp }  from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js';
-  import { getFirestore, collection, onSnapshot, orderBy, query, limit }
-    from 'https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js';
-
-  // ── helpers ──────────────────────────────────────
-  const $  = id => document.getElementById(id);
-  const set = (id, v) => { $(id).textContent = v; };
-  const fmt = s => {
-    if (!s || s < 0) return '00:00';
-    const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), ss=Math.floor(s%60);
-    return h ? `${p(h)}:${p(m)}:${p(ss)}` : `${p(m)}:${p(ss)}`;
-  };
-  const p    = n => String(n).padStart(2,'0');
-  const iso  = s => s ? new Date(s).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
-  const today = () => new Date().toISOString().slice(0,10);
-  const dkey  = s => s ? new Date(s).toISOString().slice(0,10) : null;
-
-  // ── screen helpers ────────────────────────────────
-  const screens = ['s-loading','s-config','s-error'];
-  function showScreen(id) {
-    screens.forEach(s => { $(s).classList.toggle('hidden', s !== id); });
-    $('app').style.display = id === 'app' ? 'block' : 'none';
-  }
-  window.showConfig = () => showScreen('s-config');
-
-  // ── Hardcoded Firebase config ─────────────────────
-  // Safe to embed in frontend — the API key identifies the project but
-  // access is controlled entirely by Firestore security rules, not secrecy.
+  // ── Firebase config ──────────────────────────────────
   const FIREBASE_CONFIG = {
     apiKey:            "AIzaSyDOUHw5trieJgLoJYsz6b0Q1Q9w0Xybf5M",
     authDomain:        "curveslivepro-licensing.firebaseapp.com",
@@ -320,183 +220,274 @@
     appId:             "1:582693878762:web:c4349259ba3efa59219093"
   };
 
-  // ── state ─────────────────────────────────────────
-  let sessions = [];
-  let unsub    = null;
+  // ── Init ─────────────────────────────────────────────
+  firebase.initializeApp(FIREBASE_CONFIG);
+  const db = firebase.firestore();
 
-  // ── boot — read optional URL params from Blender addon ──
-  // Only machine name is cosmetic; no sensitive data in URL.
-  function boot() {
-    const params = new URLSearchParams(location.search);
-    const machine = params.get('machine') || null;
-    // Clean URL immediately
-    if (location.search) history.replaceState({}, '', location.pathname);
-    connect(machine);
+  // ── URL params ───────────────────────────────────────
+  const params  = new URLSearchParams(window.location.search);
+  const machine = params.get('machine') || '';
+  if (machine) {
+    document.getElementById('machineLabel').textContent = machine;
+  }
+  // Clean URL
+  if (window.location.search) {
+    history.replaceState(null, '', window.location.pathname);
   }
 
-  function connect(machineHint) {
-    if (unsub) { try { unsub(); } catch(_){} }
-    $('loading-msg').textContent = `Connecting to ${FIREBASE_CONFIG.projectId}…`;
-    showScreen('s-loading');
+  // ── DOM refs ─────────────────────────────────────────
+  const $tbody      = document.getElementById('tbody');
+  const $empty      = document.getElementById('empty');
+  const $connDot    = document.getElementById('connDot');
+  const $connLabel  = document.getElementById('connLabel');
+  const $sumRunning = document.getElementById('sumRunning');
+  const $sumTotal   = document.getElementById('sumTotal');
+  const $sumTime    = document.getElementById('sumTime');
+  const $sumReloads = document.getElementById('sumReloads');
+  const $sumPurges  = document.getElementById('sumPurges');
 
-    let app, db;
-    try {
-      app = initializeApp(FIREBASE_CONFIG, 'bdt_' + Date.now());
-      db  = getFirestore(app);
-    } catch(e) { return showError(e.message); }
+  // ── Row cache ────────────────────────────────────────
+  // Keyed by session doc ID. Each value: { tr, cells: {status, sid, machine, start, elapsed, reloads, purges, activity} }
+  const _rowCache = new Map();
+  let _sessions   = [];     // current snapshot of session docs
+  let _tickerId   = null;
 
-    set('proj-label', machineHint
-      ? `${FIREBASE_CONFIG.projectId} · ${machineHint}`
-      : `${FIREBASE_CONFIG.projectId} · live`
-    );
+  // ── Helpers ──────────────────────────────────────────
 
-    const q = query(collection(db, 'sessions'), orderBy('start_time','desc'), limit(500));
-    unsub = onSnapshot(q,
-      snap => {
-        sessions = snap.docs.map(d => {
-          const data = d.data();
-          // Guarantee start_time exists — docs written without it get dropped
-          // by the orderBy clause silently. Use document ID timestamp as fallback.
-          if (!data.start_time && d.id) {
-            const ts = d.id.split('_')[1];
-            if (ts) data.start_time = new Date(parseInt(ts) * 1000).toISOString();
-          }
-          return { _id: d.id, ...data };
-        });
-        render();
-        showScreen('app');
-      },
-      err => showError(err.message)
-    );
+  /** Only assign textContent if changed — avoids DOM thrash */
+  function _setText(el, text) {
+    if (el.textContent !== text) el.textContent = text;
   }
 
-  // ── live elapsed ticker for running sessions ──────
-  // The dashboard shows elapsed_seconds from Firestore which only updates
-  // when the addon pushes. We tick running sessions locally every second
-  // so the displayed time always feels live.
-  let _tickInterval = null;
-
-  function startTicker() {
-    if (_tickInterval) return;
-    _tickInterval = setInterval(() => {
-      const hasRunning = sessions.some(s => s.status === 'running');
-      if (hasRunning) renderTable();
-    }, 1000);
+  /** Format seconds as HH:MM:SS or MM:SS */
+  function fmtElapsed(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    const mm = String(m).padStart(2, '0');
+    const ss = String(s).padStart(2, '0');
+    return h ? `${String(h).padStart(2, '0')}:${mm}:${ss}` : `${mm}:${ss}`;
   }
 
-  function stopTicker() {
-    if (_tickInterval) { clearInterval(_tickInterval); _tickInterval = null; }
+  /** Parse an ISO string or Firestore timestamp to epoch ms */
+  function toMs(val) {
+    if (!val) return 0;
+    if (typeof val === 'string') return new Date(val).getTime() || 0;
+    if (val.seconds) return val.seconds * 1000;  // Firestore Timestamp
+    if (val.toDate) return val.toDate().getTime();
+    return 0;
   }
 
-  function showError(msg) {
-    $('err-detail').textContent = msg;
-    showScreen('s-error');
+  /** Reconstruct start_time from session_id (YYYYMMDD_<unix_ts>) */
+  function startTimeFromId(sid) {
+    if (!sid) return 0;
+    const parts = sid.split('_');
+    if (parts.length >= 2) {
+      const ts = parseInt(parts[1], 10);
+      if (!isNaN(ts)) return ts * 1000;
+    }
+    return 0;
   }
 
-  // ── render ────────────────────────────────────────
-  function render() {
-    const total   = sessions.reduce((a,s)=>a+(s.elapsed_seconds||0),0);
-    const reloads = sessions.reduce((a,s)=>a+(s.reloads||0),0);
-    const purges  = sessions.reduce((a,s)=>a+(s.purges||0),0);
-    const running = sessions.filter(s=>s.status==='running').length;
-    const todayS  = sessions.filter(s=>dkey(s.start_time)===today()).reduce((a,s)=>a+(s.elapsed_seconds||0),0);
-    const avg     = sessions.length ? Math.round(total/sessions.length) : 0;
-
-    set('s-total',     (total/3600).toFixed(1)+'h');
-    set('s-total-sub', fmt(total)+' total');
-    set('s-count',     sessions.length);
-    set('s-count-sub', running+' currently running');
-    set('s-reloads',   reloads);
-    set('s-purges',    purges);
-    set('s-today',     (todayS/3600).toFixed(1)+'h');
-    set('s-avg',       fmt(avg));
-    set('last-updated','Live · '+new Date().toLocaleTimeString());
-
-    if (running > 0) startTicker(); else stopTicker();
-
-    renderTable();
-    renderCharts();
+  /** Get the effective start time for a session (handles missing start_time field) */
+  function effectiveStartMs(s) {
+    const fromField = toMs(s.start_time);
+    return fromField || startTimeFromId(s.session_id || s._id);
   }
 
+  /** Compute live elapsed for a session */
   function liveElapsed(s) {
-    // For running sessions: add seconds elapsed since last Firestore push
-    if (s.status !== 'running' || !s.last_activity_time) return s.elapsed_seconds || 0;
-    const lastPush = new Date(s.last_activity_time).getTime();
-    const extraSec = Math.max(0, Math.floor((Date.now() - lastPush) / 1000));
-    return (s.elapsed_seconds || 0) + extraSec;
+    const elapsed = s.elapsed_seconds || 0;
+    if (s.status !== 'running') return elapsed;
+
+    // Running session — add time since last push
+    const lastActivity = toMs(s.last_activity_time);
+    if (lastActivity) {
+      return elapsed + (Date.now() - lastActivity) / 1000;
+    }
+    // Fallback: time since start
+    const startMs = effectiveStartMs(s);
+    if (startMs) {
+      return (Date.now() - startMs) / 1000;
+    }
+    return elapsed;
+  }
+
+  /** Format a date for display */
+  function fmtDate(ms) {
+    if (!ms) return '—';
+    const d = new Date(ms);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' +
+           d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  /** Format last activity for display */
+  function fmtActivity(s) {
+    const act = s.last_activity || '';
+    const ts  = toMs(s.last_activity_time);
+    if (!act && !ts) return '—';
+    const label = act.replace(/_/g, ' ');
+    if (!ts) return label;
+    const ago = Math.floor((Date.now() - ts) / 1000);
+    let agoStr;
+    if (ago < 60)        agoStr = `${ago}s ago`;
+    else if (ago < 3600) agoStr = `${Math.floor(ago / 60)}m ago`;
+    else                 agoStr = `${Math.floor(ago / 3600)}h ago`;
+    return label ? `${label} (${agoStr})` : agoStr;
+  }
+
+  // ── Render ───────────────────────────────────────────
+
+  function createRow(s) {
+    const tr = document.createElement('tr');
+    const cells = {};
+    const names = ['status', 'sid', 'machine', 'start', 'elapsed', 'reloads', 'purges', 'activity'];
+    names.forEach(name => {
+      const td = document.createElement('td');
+      tr.appendChild(td);
+      cells[name] = td;
+    });
+    return { tr, cells };
+  }
+
+  function updateRow(entry, s) {
+    const { cells } = entry;
+    const isRunning = s.status === 'running';
+
+    // Status badge
+    const badgeClass = isRunning ? 'running' : 'stopped';
+    const badgeText  = isRunning ? 'Running' : 'Stopped';
+    const badgeHtml  = `<span class="badge ${badgeClass}">${badgeText}</span>`;
+    if (cells.status.innerHTML !== badgeHtml) cells.status.innerHTML = badgeHtml;
+
+    _setText(cells.sid,      s.session_id || s._id || '—');
+    _setText(cells.machine,  s.machine || '—');
+    _setText(cells.start,    fmtDate(effectiveStartMs(s)));
+
+    // Elapsed
+    const el = liveElapsed(s);
+    const elStr = fmtElapsed(el);
+    _setText(cells.elapsed, elStr);
+    cells.elapsed.className = isRunning ? 'elapsed-live' : 'elapsed-stopped';
+
+    _setText(cells.reloads,  String(s.reloads || 0));
+    _setText(cells.purges,   String(s.purges || 0));
+    _setText(cells.activity, fmtActivity(s));
   }
 
   function renderTable() {
-    const tb = $('tbody');
-    if (!sessions.length) {
-      tb.innerHTML = `<tr class="load-row"><td colspan="7">
-        <div class="empty"><div class="ico">🎬</div>
-        <p>No sessions yet.<br>Start the Work Timer in Blender to log your first session.</p></div>
-      </td></tr>`;
+    if (_sessions.length === 0) {
+      $tbody.style.display = 'none';
+      $empty.style.display = '';
       return;
     }
-    const mx = Math.max(...sessions.map(s=>liveElapsed(s)),1);
-    tb.innerHTML = sessions.map(s=>{
-      const elapsed = liveElapsed(s);
-      const pct  = Math.round((elapsed/mx)*100);
-      const live = s.status==='running';
-      const badge = live
-        ? `<span class="badge b-run"><span class="bdot"></span>running</span>`
-        : `<span class="badge b-stp"><span class="bdot"></span>stopped</span>`;
-      return `<tr>
-        <td class="nm">${s.session_id||s._id||'—'}</td>
-        <td>${s.machine||'—'}</td>
-        <td>${iso(s.start_time)}</td>
-        <td><div style="display:flex;align-items:center;gap:8px">
-          <span>${fmt(elapsed)}</span>
-          <div class="bw"><div class="bf" style="width:${pct}%"></div></div>
-        </div></td>
-        <td>${s.reloads??'—'}</td>
-        <td>${s.purges??'—'}</td>
-        <td>${badge}</td>
-      </tr>`;
-    }).join('');
+    $tbody.style.display = '';
+    $empty.style.display = 'none';
+
+    // Track which IDs are still present
+    const activeIds = new Set();
+
+    _sessions.forEach((s, idx) => {
+      const id = s._id;
+      activeIds.add(id);
+
+      let entry = _rowCache.get(id);
+      if (!entry) {
+        entry = createRow(s);
+        _rowCache.set(id, entry);
+      }
+      updateRow(entry, s);
+
+      // Insert row in correct position
+      const currentRow = $tbody.children[idx];
+      if (currentRow !== entry.tr) {
+        $tbody.insertBefore(entry.tr, currentRow || null);
+      }
+    });
+
+    // Remove rows for deleted sessions
+    for (const [id, entry] of _rowCache) {
+      if (!activeIds.has(id)) {
+        entry.tr.remove();
+        _rowCache.delete(id);
+      }
+    }
+
+    // Update summary cards
+    let running = 0, totalElapsed = 0, totalReloads = 0, totalPurges = 0;
+    _sessions.forEach(s => {
+      if (s.status === 'running') running++;
+      totalElapsed += liveElapsed(s);
+      totalReloads += (s.reloads || 0);
+      totalPurges  += (s.purges  || 0);
+    });
+
+    _setText($sumRunning, String(running));
+    _setText($sumTotal,   String(_sessions.length));
+    _setText($sumTime,    fmtElapsed(totalElapsed));
+    _setText($sumReloads, String(totalReloads));
+    _setText($sumPurges,  String(totalPurges));
   }
 
-  function renderCharts() {
-    // 7-day bar chart
-    const days = Array.from({length:7},(_,i)=>{
-      const d=new Date(); d.setDate(d.getDate()-(6-i)); return d;
-    });
-    const daySecs = days.map(d=>{
-      const k=d.toISOString().slice(0,10);
-      return sessions.filter(s=>dkey(s.start_time)===k).reduce((a,s)=>a+(s.elapsed_seconds||0),0);
-    });
-    const mx = Math.max(...daySecs,1);
-    $('chart-days').innerHTML = days.map((d,i)=>{
-      const h = Math.max(4,Math.round((daySecs[i]/mx)*96));
-      const lbl = d.toLocaleDateString([],{weekday:'short'}).slice(0,2);
-      return `<div class="bc"><div class="b" style="height:${h}px" title="${(daySecs[i]/3600).toFixed(2)}h"></div><div class="bl">${lbl}</div></div>`;
-    }).join('');
+  // ── Ticker ───────────────────────────────────────────
 
-    // Machine chart
-    const mach = {};
-    sessions.forEach(s=>{
-      const m=s.machine||'unknown';
-      if(!mach[m]) mach[m]={n:0,s:0};
-      mach[m].n++; mach[m].s+=s.elapsed_seconds||0;
-    });
-    const mxm = Math.max(...Object.values(mach).map(m=>m.s),1);
-    $('chart-machines').innerHTML = Object.entries(mach)
-      .sort((a,b)=>b[1].s-a[1].s).slice(0,5)
-      .map(([name,d])=>{
-        const pct=Math.round((d.s/mxm)*100);
-        return `<div class="mbar">
-          <div class="mbar-row"><span class="mbar-name">${name}</span><span class="mbar-info">${(d.s/3600).toFixed(1)}h · ${d.n}</span></div>
-          <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%"></div></div>
-        </div>`;
-      }).join('');
+  function startTicker() {
+    if (_tickerId !== null) return;
+    _tickerId = setInterval(renderTable, 1000);
   }
 
-  // ── kick off ──────────────────────────────────────
-  // app hidden by default until connected
-  $('app').style.display = 'none';
-  boot();
+  function stopTicker() {
+    if (_tickerId === null) return;
+    clearInterval(_tickerId);
+    _tickerId = null;
+  }
+
+  function manageTicker() {
+    const hasRunning = _sessions.some(s => s.status === 'running');
+    if (hasRunning) startTicker();
+    else            stopTicker();
+  }
+
+  // ── Firestore listener ───────────────────────────────
+
+  function setConnected(ok) {
+    $connDot.className  = 'status-dot ' + (ok ? 'connected' : 'disconnected');
+    $connLabel.textContent = ok ? 'Connected' : 'Disconnected';
+  }
+
+  db.collection('sessions')
+    .orderBy('start_time', 'desc')
+    .limit(200)
+    .onSnapshot(
+      snapshot => {
+        setConnected(true);
+
+        _sessions = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          data._id = doc.id;
+          // Ensure start_time exists (reconstruct from ID if missing)
+          if (!data.start_time) {
+            const ms = startTimeFromId(data.session_id || doc.id);
+            if (ms) data.start_time = new Date(ms).toISOString();
+          }
+          _sessions.push(data);
+        });
+
+        renderTable();
+        manageTicker();
+      },
+      err => {
+        console.error('[DevTracker] Firestore error:', err);
+        setConnected(false);
+      }
+    );
+
+  // Initial render
+  renderTable();
+
+})();
 </script>
 </body>
 </html>
